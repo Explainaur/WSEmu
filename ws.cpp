@@ -6,6 +6,9 @@
 #include <fstream>
 #include <iostream>
 
+#include "code.tmpl"
+
+
 #define TRACE0() \
   do { \
     printf("%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__); \
@@ -67,6 +70,8 @@ public:
   Opcode opcode() { return _opcode; }
 
   const Tokens &oprands() { return _oprands; }
+
+  void CodeGeneAction(ostream &os);
 };
 
 InstPtr MakeInst(int line, Opcode opcode, const Tokens &tokens) {
@@ -98,6 +103,13 @@ public:
   }
 
   void SetSucc(const BlockPtr &succ) { _succ = succ; }
+
+  void CodeGeneAction(ostream &os) {
+    os << "label" << _label << ":" << endl;
+    for (const auto &it : insts()) {
+      it->CodeGeneAction(os);
+    }
+  }
 };
 
 void DumpInst(const Tokens &tokens);
@@ -175,6 +187,8 @@ public:
 
   void DumpState();
 
+  void CodeGeneAction(ostream &os);
+
   // run passes
 
   // build pred-succ
@@ -214,10 +228,12 @@ int main(int argc, char *argv[]) {
 //  for (const auto &it : cfg[0]->insts()) {
 //    it->dump();
 //  }
-  module.EvalInit();
-  while (true) {
-    module.Eval();
-  }
+//  module.EvalInit();
+//  while (true) {
+//    module.Eval();
+//  }
+
+  module.CodeGeneAction(cout);
 }
 
 void DumpInst(const Tokens &tokens) {
@@ -485,4 +501,113 @@ void Module::DumpState() {
     i++;
   }
   cout << endl;
+}
+
+void Module::CodeGeneAction(ostream &os) {
+  os << head;
+  for (const auto &it : _cfg) {
+    it->CodeGeneAction(os);
+  }
+  os << "}";
+}
+
+void Inst::CodeGeneAction(ostream &os) {
+  switch (_opcode) {
+    case Opcode::push: {
+      os << "Stack.push(" << _oprands[0] << ");" << endl;
+      break;
+    }
+    case Opcode::pop: {
+      os << "Stack.pop();" << endl;
+      break;
+    }
+    case Opcode::dup: {
+      os << "tmp = Stack.top();\nStack.push(tmp);" << endl;
+      break;
+    }
+    case Opcode::store: {
+      os << "value = Stack.top();\nStack.pop();\n"
+         << "addr = Stack.top();\nStack.pop();\n"
+         << "heap[addr] = value;" << endl;
+      break;
+    }
+    case Opcode::retrieve: {
+      os << "addr = Stack.top();\nStack.pop();\n"
+         << "value = heap[addr];\n"
+         << "Stack.push(value);" << endl;
+      break;
+    }
+    case Opcode::add: {
+      os << "rhs = Stack.top();\nStack.pop();\n"
+         << "lhs = Stack.top();\nStack.pop();\n"
+         << "tmp = lhs + rhs;\n"
+         << "Stack.push(tmp);" << endl;
+      break;
+    }
+    case Opcode::sub: {
+      os << "rhs = Stack.top();\nStack.pop();\n"
+         << "lhs = Stack.top();\nStack.pop();\n"
+         << "tmp = lhs - rhs;\n"
+         << "Stack.push(tmp);" << endl;
+      break;
+    }
+    case Opcode::mul: {
+      os << "rhs = Stack.top();\nStack.pop();\n"
+         << "lhs = Stack.top();\nStack.pop();\n"
+         << "tmp = lhs * rhs;\n"
+         << "Stack.push(tmp);" << endl;
+      break;
+    }
+    case Opcode::div: {
+      os << "rhs = Stack.top();\nStack.pop();\n"
+         << "lhs = Stack.top();\nStack.pop();\n"
+         << "tmp = lhs / rhs;\n"
+         << "Stack.push(tmp);" << endl;
+      break;
+    }
+    case Opcode::mod: {
+      os << "rhs = Stack.top();\nStack.pop();\n"
+         << "lhs = Stack.top();\nStack.pop();\n"
+         << "tmp = lhs % rhs;\n"
+         << "Stack.push(tmp);" << endl;
+      break;
+    }
+    case Opcode::jmp: {
+      os << "goto label" << _oprands[0] << ";" << endl;
+      break;
+    }
+    case Opcode::jz: {
+      os << "tmp = Stack.top();\nStack.pop();\n"
+         << "if (tmp == 0) goto label" << _oprands[0] << ";" << endl;
+      break;
+    }
+    case Opcode::jn: {
+      os << "tmp = Stack.top();\nStack.pop();\n"
+         << "if (tmp < 0) goto label" << _oprands[0] << ";" << endl;
+      break;
+    }
+    case Opcode::putchar: {
+      os << "value = Stack.top();\nStack.pop();\n"
+         << "printf(\"%c\", value);" << endl;
+      break;
+    }
+    case Opcode::getchar: {
+      os << "addr = Stack.top();\nStack.pop();\n"
+         << "scanf(\"%c\", &ch);\n"
+         << "heap[addr] = ch;" << endl;
+      break;
+    }
+    case Opcode::halt: {
+
+      break;
+    }
+    case Opcode::exit: {
+      os << "exit(0);" << endl;
+      break;
+    }
+    case Opcode::discard: {
+      os << "Stack.pop();" << endl;
+      break;
+    }
+  }
 }
