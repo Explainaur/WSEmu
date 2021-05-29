@@ -514,62 +514,63 @@ void Module::CodeGeneAction(ostream &os) {
 void Inst::CodeGeneAction(ostream &os) {
   switch (_opcode) {
     case Opcode::push: {
-      os << "Stack.push(" << _oprands[0] << ");" << endl;
+      os << "sp++;\n"
+         << "stack[sp] = " + _oprands[0] << ";" << endl;
       break;
     }
     case Opcode::pop: {
-      os << "Stack.pop();" << endl;
+      os << "sp--;" << endl;
       break;
     }
     case Opcode::dup: {
-      os << "tmp = Stack.top();\nStack.push(tmp);" << endl;
+      os << "tmp = stack[sp];\nsp++;\nstack[sp] = tmp;" << endl;
       break;
     }
     case Opcode::store: {
-      os << "value = Stack.top();\nStack.pop();\n"
-         << "addr = Stack.top();\nStack.pop();\n"
+      os << "value = stack[sp];\nsp--;\n"
+         << "addr = stack[sp];\nsp--;\n"
          << "heap[addr] = value;" << endl;
       break;
     }
     case Opcode::retrieve: {
-      os << "addr = Stack.top();\nStack.pop();\n"
+      os << "addr = stack[sp];\nsp--;\n"
          << "value = heap[addr];\n"
-         << "Stack.push(value);" << endl;
+         << "sp++;\nstack[sp] = value;" << endl;
       break;
     }
     case Opcode::add: {
-      os << "rhs = Stack.top();\nStack.pop();\n"
-         << "lhs = Stack.top();\nStack.pop();\n"
+      os << "rhs = stack[sp];\nsp--;\n"
+         << "lhs = stack[sp];\nsp--;\n"
          << "tmp = lhs + rhs;\n"
-         << "Stack.push(tmp);" << endl;
+         << "sp++;\nstack[sp] = tmp;" << endl;
       break;
     }
     case Opcode::sub: {
-      os << "rhs = Stack.top();\nStack.pop();\n"
-         << "lhs = Stack.top();\nStack.pop();\n"
+      os << "rhs = stack[sp];\nsp--;\n"
+         << "lhs = stack[sp];\nsp--;\n"
          << "tmp = lhs - rhs;\n"
-         << "Stack.push(tmp);" << endl;
+         << "sp++;\nstack[sp] = tmp;" << endl;
       break;
     }
     case Opcode::mul: {
-      os << "rhs = Stack.top();\nStack.pop();\n"
-         << "lhs = Stack.top();\nStack.pop();\n"
+      os << "rhs = stack[sp];\nsp--;\n"
+         << "lhs = stack[sp];\nsp--;\n"
          << "tmp = lhs * rhs;\n"
-         << "Stack.push(tmp);" << endl;
+         << "sp++;\nstack[sp] = tmp;" << endl;
       break;
     }
     case Opcode::div: {
-      os << "rhs = Stack.top();\nStack.pop();\n"
-         << "lhs = Stack.top();\nStack.pop();\n"
+      os << "rhs = stack[sp];\nsp--;\n"
+         << "lhs = stack[sp];\nsp--;\n"
          << "tmp = lhs / rhs;\n"
-         << "Stack.push(tmp);" << endl;
+         << "sp++;\nstack[sp] = tmp;" << endl;
       break;
     }
     case Opcode::mod: {
-      os << "rhs = Stack.top();\nStack.pop();\n"
-         << "lhs = Stack.top();\nStack.pop();\n"
+      os << "rhs = stack[sp];\nsp--;\n"
+         << "lhs = stack[sp];\nsp--;\n"
          << "tmp = lhs % rhs;\n"
-         << "Stack.push(tmp);" << endl;
+         << "sp++;\nstack[sp] = tmp;" << endl;
       break;
     }
     case Opcode::jmp: {
@@ -577,22 +578,22 @@ void Inst::CodeGeneAction(ostream &os) {
       break;
     }
     case Opcode::jz: {
-      os << "tmp = Stack.top();\nStack.pop();\n"
+      os << "tmp = stack[sp];\nsp--;\n"
          << "if (tmp == 0) goto label" << _oprands[0] << ";" << endl;
       break;
     }
     case Opcode::jn: {
-      os << "tmp = Stack.top();\nStack.pop();\n"
+      os << "tmp = stack[sp];\nsp--;\n"
          << "if (tmp < 0) goto label" << _oprands[0] << ";" << endl;
       break;
     }
     case Opcode::putchar: {
-      os << "value = Stack.top();\nStack.pop();\n"
+      os << "value = stack[sp];\nsp--;\n"
          << "printf(\"%c\", value);" << endl;
       break;
     }
     case Opcode::getchar: {
-      os << "addr = Stack.top();\nStack.pop();\n"
+      os << "addr = stack[sp];\nsp--;\n"
          << "scanf(\"%c\", &ch);\n"
          << "heap[addr] = ch;" << endl;
       break;
@@ -606,7 +607,7 @@ void Inst::CodeGeneAction(ostream &os) {
       break;
     }
     case Opcode::discard: {
-      os << "Stack.pop();" << endl;
+      os << "sp--;" << endl;
       break;
     }
   }
