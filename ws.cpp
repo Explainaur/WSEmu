@@ -111,6 +111,7 @@ private:
   BlockPtr _current;
 
   // used for eval
+  bool _debug;
   Insts::const_iterator _pc;
   vector<BlockPtr>::const_iterator _cur_BB_it;
 
@@ -133,6 +134,8 @@ public:
   InstPtr ParseInst(const Tokens &tokens, int lineNumber);
 
   void Eval();
+
+  void setDebug(bool value) { _debug = value; }
 
   Tokens Parse(const string &line) {
     string token;
@@ -182,7 +185,7 @@ public:
   }
 };
 
-int main() {
+int main(int argc, char *argv[]) {
   fstream file;
   file.open("1.asm", std::fstream::in);
 
@@ -191,6 +194,12 @@ int main() {
   int lineNumber = 1;
   Tokens tokens;
   Module module;
+
+  if (argc == 2) {
+    if (argv[1][0] == 'd') {
+      module.setDebug(true);
+    }
+  }
 
   while (getline(file, line)) {
 
@@ -346,7 +355,10 @@ InstPtr Module::ParseInst(const Tokens &tokens, int lineNumber) {
 
 void Module::Eval() {
   auto &inst = *_pc;
-//  inst->dump();
+
+  // dump instruction
+  if (_debug)inst->dump();
+
   _pc++;
   if (_pc == (*_cur_BB_it)->insts().end()) {
     _cur_BB_it++;
@@ -459,16 +471,17 @@ void Module::Eval() {
       break;
     }
   }
-//  DumpState();
+  DumpState();
 }
 
 void Module::DumpState() {
+  if (!_debug) return;
   cout << "Heap[0]: " << _heap[0]
        << " stack: ";
   int i = 0;
   for (const auto &it : _stack) {
     cout << it;
-    if (i != _stack.size() -1 ) cout << " -> ";
+    if (i != _stack.size() - 1) cout << " -> ";
     i++;
   }
   cout << endl;
